@@ -118,17 +118,14 @@ export default function AgentBuilder({ agentId }: any) {
       if (!authenticated || !walletAddress) return;
 
       try {
-        // Create a provider
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const provider = new ethers.BrowserProvider(window.ethereum);
         const contract = new ethers.Contract(
           config.ERC20_CONTRACT_ADDRESS,
           abi_erc20,
           provider
         );
-
-        // Call the balanceOf function
         const balance = await contract.balanceOf(walletAddress);
-        setBalance(ethers.utils.formatUnits(balance, 18)); // Format the balance
+        setBalance(ethers.formatUnits(balance, 18));
       } catch (error) {
         console.error("Error fetching balance:", error);
       }
@@ -411,19 +408,17 @@ export default function AgentBuilder({ agentId }: any) {
     setIsCreating(true); // Disable inputs when creating the agent
 
     try {
-      // Payment process
       await window.ethereum.request({ method: "eth_requestAccounts" });
-
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const erc20Contract = new ethers.Contract(
         config.ERC20_CONTRACT_ADDRESS,
         abi_erc20,
         signer
       );
 
-      const adminAddress = config.GINTONIC_CONTRACT_ADDRESS; // Replace with the actual admin address
-      const ginAmount = ethers.utils.parseUnits("500", 18); // 500 GIN
+      const adminAddress = config.GINTONIC_CONTRACT_ADDRESS;
+      const ginAmount = ethers.parseUnits("500", 18);
 
       const tx = await erc20Contract.transfer(adminAddress, ginAmount);
       console.log("Transaction sent, waiting for confirmation...");

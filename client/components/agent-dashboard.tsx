@@ -6,6 +6,7 @@ import { Header } from "@/components/ui/header";
 import { SearchBar } from "@/components/ui/search-bar";
 import { AgentGrid } from "@/components/agent-grid";
 import config from "@/config/config";
+import { toast } from "react-hot-toast";
 
 interface Agent {
   _id: string;
@@ -25,29 +26,48 @@ export default function AgentDashboard() {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-
-    console.log(" BASE_URL ", config.BASE_URL)
     const fetchAgents = async () => {
       setLoading(true);
       try {
+        console.log('Fetching from:', `${config.BASE_URL}/api/assistants?page=${currentPage}&limit=6`);
         const response = await axios.get<{
           pages: any;
           page: number;
-          pagination: any; success: boolean; data: Agent[];  
-}>(
-          `${config.BASE_URL}/api/assistants?page=${currentPage}&limit=6`
-        );
+          pagination: any;
+          success: boolean;
+          data: Agent[];
+        }>(`${config.BASE_URL}/api/assistants?page=${currentPage}&limit=6`, {
+          timeout: 5000,
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+
         if (response.data.success) {
           setAgents(response.data.data);
-          console.log("totalpages", response.data.pages)
-
           setTotalPages(response.data.pagination.pages);
           setCurrentPage(response.data.pagination.page);
-          console.log("totalrecord", response.data.pagination.total)
         }
-      } catch (error) {
-        console.error("Error fetching agents:", error);
-        setErrorMessage("Failed to fetch agents");
+      } catch (error: any) {
+        console.log('Full error object:', error);
+        if (error.code === 'ECONNABORTED') {
+          toast.error('Connection timeout. Please try again.');
+        } else if (error.message === 'Network Error') {
+          toast.error('CORS error - Please check API configuration');
+          console.error('API connection failed:', {
+            baseUrl: config.BASE_URL,
+            error: error.message,
+            status: error.response?.status,
+            statusText: error.response?.statusText
+          });
+        } else {
+          console.error('Error fetching agents:', error.response || error);
+          toast.error(error.response?.data?.message || 'Failed to load agents');
+        }
+        setErrorMessage('Failed to load agents. Please try again later.');
       } finally {
         setLoading(false);
       }

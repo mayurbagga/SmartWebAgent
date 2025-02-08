@@ -1,16 +1,16 @@
 "use client";
 
-import { FC, useState, useEffect } from "react";
-// import { useRouter } from "next/navigation";
-import { X, Copy, Check } from "lucide-react";
+import { FC, useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { X , Copy , Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
-import { ethers } from "ethers";
-import erc20Abi from "@/config/abi_erc20.json";
-import gintonicAbi from "@/config/gintonic.json";
-import toast from "react-hot-toast";
-import config from "@/config/config";
+import { ethers } from 'ethers';
+import erc20Abi from '@/config/abi_erc20.json';
+import gintonicAbi from '@/config/gintonic.json';
+import toast from 'react-hot-toast';
+import config from '@/config/config';
 
 const GINTONIC_CONTRACT_ADDRESS = config.GINTONIC_CONTRACT_ADDRESS;
 const ERC20_CONTRACT_ADDRESS = config.ERC20_CONTRACT_ADDRESS;
@@ -21,11 +21,11 @@ interface ModalProps {
 }
 
 export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
-  const { authenticated, login, user } = usePrivy();
+  const { authenticated, login, logout, user } = usePrivy();
   const userAddress = user?.wallet?.address;
   const truncatedAddress =
-    userAddress && `${userAddress.slice(0, 7)}...${userAddress.slice(-7)}`;
-  // const router = useRouter();
+  userAddress && `${userAddress.slice(0, 7)}...${userAddress.slice(-7)}`;
+  const router = useRouter();
 
   const [balance, setBalance] = useState<string>("0");
   const [ginAmount, setGinAmount] = useState<string>("");
@@ -44,38 +44,30 @@ export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
 
   const fetchBalance = async () => {
     if (!authenticated || !userAddress) {
-      console.log("User not authenticated or user address not available");
+      console.log('User not authenticated or user address not available');
       return;
     }
 
     try {
-      console.log("Fetching balance for address:", userAddress);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const erc20Contract = new ethers.Contract(
-        ERC20_CONTRACT_ADDRESS,
-        erc20Abi,
-        provider
-      );
+      console.log('Fetching balance for address:', userAddress);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const erc20Contract = new ethers.Contract(ERC20_CONTRACT_ADDRESS, erc20Abi, provider);
       const balance = await erc20Contract.balanceOf(userAddress);
-      console.log("Raw balance:", balance.toString());
-      setBalance(ethers.utils.formatUnits(balance, 18));
+      console.log('Raw balance:', balance.toString());
+      setBalance(ethers.formatUnits(balance, 18));
     } catch (error) {
-      console.error("Error fetching balance:", error);
+      console.error('Error fetching balance:', error);
     }
   };
 
   const fetchExchangeRate = async () => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const exchangeContract = new ethers.Contract(
-        GINTONIC_CONTRACT_ADDRESS,
-        gintonicAbi,
-        provider
-      );
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const exchangeContract = new ethers.Contract(GINTONIC_CONTRACT_ADDRESS, gintonicAbi, provider);
       const rate = await exchangeContract.exchangeRate();
       setExchangeRate(rate.toNumber());
     } catch (error) {
-      console.error("Error fetching exchange rate:", error);
+      console.error('Error fetching exchange rate:', error);
     }
   };
 
@@ -86,36 +78,32 @@ export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
 
   const handleExchange = async () => {
     if (!authenticated || !ginAmount) {
-      console.log("User not authenticated or no GIN amount entered");
+      console.log('User not authenticated or no GIN amount entered');
       return;
     }
 
     setLoading(true);
 
     try {
-      await window.ethereum.request({ method: "eth_requestAccounts" });
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const exchangeContract = new ethers.Contract(
-        GINTONIC_CONTRACT_ADDRESS,
-        gintonicAbi,
-        signer
-      );
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const exchangeContract = new ethers.Contract(GINTONIC_CONTRACT_ADDRESS, gintonicAbi, signer);
 
-      const ginAmountBN = ethers.utils.parseUnits(ginAmount, 18);
+      const ginAmountBN = ethers.parseUnits(ginAmount, 18);
       const ethValue = ginAmountBN.div(exchangeRate);
 
-      console.log("ETH Value:", ethValue.toString());
-      console.log("Exchange Rate:", exchangeRate);
-      console.log("GIN Amount:", ginAmount);
+      console.log('ETH Value:', ethValue.toString());
+      console.log('Exchange Rate:', exchangeRate);
+      console.log('GIN Amount:', ginAmount);
 
       const tx = await exchangeContract.exchange({ value: ethValue });
-      console.log("Transaction sent, waiting for confirmation...");
+      console.log('Transaction sent, waiting for confirmation...');
       await tx.wait();
 
-      console.log("Exchange successful");
-      toast.success("Exchange successful!");
+      console.log('Exchange successful');
+      toast.success('Exchange successful!');
 
       // Fetch updated balance
       fetchBalance();
@@ -124,8 +112,8 @@ export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
       setGinAmount("");
       onClose();
     } catch (error) {
-      console.error("Error during exchange:", error);
-      toast.error("Exchange failed. Please try again.");
+      console.error('Error during exchange:', error);
+      toast.error('Exchange failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -134,12 +122,12 @@ export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
   // Calculate ETH value based on GIN amount and exchange rate
   const calculateEthValue = (): string => {
     if (!ginAmount || exchangeRate === 0) return "0";
-    const ginAmountBN = ethers.utils.parseUnits(ginAmount, 18);
+    const ginAmountBN = ethers.parseUnits(ginAmount, 18);
     const ethValue = ginAmountBN.div(exchangeRate);
-    const formattedEthValue = ethers.utils.formatEther(ethValue);
-    console.log("GIN Amount:", ginAmount);
-    console.log("Exchange Rate:", exchangeRate);
-    console.log("Calculated ETH Value:", formattedEthValue);
+    const formattedEthValue = ethers.formatEther(ethValue);
+    console.log('GIN Amount:', ginAmount);
+    console.log('Exchange Rate:', exchangeRate);
+    console.log('Calculated ETH Value:', formattedEthValue);
     return formattedEthValue;
   };
 
@@ -158,37 +146,28 @@ export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
           Purchase tokens to unlock AI agent interactions
         </p>
         <Button
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 flex gap-1"
-          onClick={login}
-        >
-          <Image
-            src="/images/connect.svg"
-            alt="connect"
-            width={22}
-            height={16}
-          />
-          {authenticated ? (
-            <span className="flex items-center gap-1">
-              <span
-                onClick={handleAddressClick}
-                title={copySuccess ? "Copied!" : "Click to copy address"}
-                className="cursor-pointer underline"
-              >
-                {truncatedAddress}
-              </span>
-              <span
-                onClick={handleAddressClick}
-                title={copySuccess ? "Copied!" : "Copy address"}
-                className="cursor-pointer"
-              >
-                {copySuccess ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </span>
-            </span>
-          ) : (
+      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 flex gap-1"
+      onClick={login}
+    >
+      <Image src="/images/connect.svg" alt="connect" width={22} height={16} />
+      {authenticated ? (
+        <span className="flex items-center gap-1">
+          <span
+            onClick={handleAddressClick}
+            title={copySuccess ? "Copied!" : "Click to copy address"}
+            className="cursor-pointer underline"
+          >
+            {truncatedAddress}
+          </span>
+          <span
+            onClick={handleAddressClick}
+            title={copySuccess ? "Copied!" : "Copy address"}
+            className="cursor-pointer"
+          >
+            {copySuccess ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </span>
+        </span>
+      ) : (
             "Connect MetaMask"
           )}
         </Button>
@@ -235,13 +214,11 @@ export const Modal: FC<ModalProps> = ({ isOpen, onClose }) => {
           <p className="text-sm text-muted-foreground">
             You will be charged {calculateEthValue()} ETH
           </p>
-
+          
           <div className="flex gap-2 mt-4">
             <Button
               className={`w-full bg-[#FFFFFF] text-primary-foreground ${
-                !authenticated || !ginAmount || loading
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
+                !authenticated || !ginAmount || loading ? "opacity-50 cursor-not-allowed" : ""
               }`}
               onClick={handleExchange}
               disabled={!authenticated || !ginAmount || loading}

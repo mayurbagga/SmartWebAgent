@@ -48,82 +48,40 @@ export const Header: React.FC = () => {
     setDisconnectModalOpen(true);
   };
 
-  const confirmDisconnect = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      // First clear local storage and context
+      setJwtToken(null);
+      localStorage.removeItem("jwtToken");
+      
+      // Disconnect from MetaMask if connected
+      if (window.ethereum && window.ethereum.selectedAddress) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_requestPermissions",
+            params: [{ eth_accounts: {} }]
+          });
+        } catch (err) {
+          console.log("MetaMask disconnect error:", err);
+        }
+      }
+
+      // Finally call Privy logout
+      await logout();
+      
+      toast.success("Logged out successfully.");
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Error during logout");
+    }
+  };
+
+  const confirmDisconnect = async () => {
+    await handleLogout();
     setDisconnectModalOpen(false);
     setDropdownOpen(false);
-    router.push("/");
   };
-
-
-  const authenticateUser = async () => {
-    // Check if JWT token already exists in context or localStorage
-    const storedToken = localStorage.getItem("jwtToken");
-    if (jwtToken || storedToken) {
-      setJwtToken(storedToken);
-      return;
-    }
-  
-    if (!authenticated || !user?.wallet?.address) return;
-  
-    try {
-      const nonceResponse = await axios.post(`${config.BASE_URL}/api/users/get-nonce`, {
-        address: user.wallet.address,
-      });
-  
-      if (nonceResponse.status !== 200 || !nonceResponse.data.nonce) {
-        throw new Error("Failed to fetch nonce for authentication.");
-      }
-  
-      const message = nonceResponse.data.nonce;
-      let signature;
-      console.log("User wallet object:", user.wallet);
-      if (user.wallet.embedded) {
-        signature = await signMessage(message);
-      } else if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        signature = await signer.signMessage(message);
-      } else {
-        throw new Error("No wallet available to sign the message.");
-      }
-  
-      console.log("signature in header...........", signature);
-  
-      const response = await axios.post(`${config.BASE_URL}/api/users/authenticate`, {
-        address: user.wallet.address,
-        signature: signature,
-      });
-  
-      if (response.status === 200) {
-        toast.success("Successfully authenticated!");
-        setJwtToken(response.data.token);  // Store JWT token in context
-        localStorage.setItem("jwtToken", response.data.token); // Persist token in localStorage
-      } else {
-        toast.error("Authentication failed.");
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      toast.error("An error occurred during authentication.");
-    }
-  };
-  
-  useEffect(() => {
-    if (authenticated && !jwtToken) {
-      authenticateUser();
-    }
-  }, [authenticated]);
-  
-  const handleLogout = () => {
-    logout();  // Call Privy's logout function
-    setJwtToken(null);
-    localStorage.removeItem("jwtToken");
-    toast("Logged out successfully."); 
-  };
-  
-  
-  
-
 
   const cancelDisconnect = () => {
     setDisconnectModalOpen(false);
@@ -168,13 +126,10 @@ export const Header: React.FC = () => {
       if (!authenticated || !userAddress) return;
 
       try {
-        // Create a provider
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const provider = new ethers.BrowserProvider(window.ethereum);
         const contract = new ethers.Contract(config.ERC20_CONTRACT_ADDRESS, abi_erc20, provider);
-
-        // Call the balanceOf function
         const balance = await contract.balanceOf(userAddress);
-        setBalance(ethers.utils.formatUnits(balance, 18)); // Format the balance
+        setBalance(ethers.formatUnits(balance, 18));
       } catch (error) {
         console.error('Error fetching balance:', error);
       }
