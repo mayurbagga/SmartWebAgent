@@ -6,6 +6,7 @@ import { Header } from "@/components/ui/header";
 import { SearchBar } from "@/components/ui/search-bar";
 import { AgentGrid } from "@/components/agent-grid";
 import config from "@/config/config";
+import { usePrivy } from "@privy-io/react-auth";
 
 interface Agent {
   _id: string;
@@ -16,7 +17,7 @@ interface Agent {
   imageUrl: string;
 }
 
-export default function AgentDashboard() {
+export default function MyAgents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,53 +25,53 @@ export default function AgentDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
+  const { authenticated, login, logout, user } = usePrivy();
+  const walletAddress = user?.wallet?.address;
 
-    console.log(" BASE_URL ", config.BASE_URL)
-    const fetchAgents = async () => {
-      setLoading(true);
+  useEffect(() => {
+    console.log("walletaddress........", walletAddress);
+  
+    const fetchMyAgents = async () => {
       try {
         const response = await axios.get<{
           pages: any;
           page: number;
           pagination: any; success: boolean; data: Agent[];  
 }>(
-          `${config.BASE_URL}/api/assistants?page=${currentPage}&limit=6`
+          `${config.BASE_URL}/api/assistants/address/${walletAddress}?page=${currentPage}&limit=6`
         );
         if (response.data.success) {
+          // console.log("list of my agents", response.data);
           setAgents(response.data.data);
-          console.log("totalpages", response.data.pages)
-
           setTotalPages(response.data.pagination.pages);
           setCurrentPage(response.data.pagination.page);
-          console.log("totalrecord", response.data.pagination.total)
         }
       } catch (error) {
         console.error("Error fetching agents:", error);
-        setErrorMessage("Failed to fetch agents");
+        setErrorMessage("Failed to fetch your agents");
       } finally {
         setLoading(false);
       }
     };
+  
+    if (walletAddress) {
+      fetchMyAgents();
+    }
+  }, [walletAddress , currentPage]);
 
-    fetchAgents();
-  }, [currentPage]);
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
-
+  
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Header />
         <div className="py-12 space-y-8 text-center">
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight text-primary">Gintonic AI Agents</h1>
-            <p className="text-lg text-white max-w-2xl mx-auto">
-              Explore AI agents designed to help with various tasks and projects,
-              or create your own customized solution to fit your needs.
-            </p>
+            <h1 className="text-4xl font-bold tracking-tight text-primary">My Agents</h1>
           </div>
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
           <AgentGrid

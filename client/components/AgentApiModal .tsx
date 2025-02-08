@@ -8,43 +8,77 @@ import Image from "next/image";
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-}
+    formData: {
+      agentName: string;
+      codename: string;
+      roleDescription: string;
+    };
+  }
 
-export const AgentApiModal: FC<ModalProps> = ({ isOpen, onClose }) => {
+export const AgentApiModal: FC<ModalProps> = ({ isOpen, onClose , formData}) => {
     if (!isOpen) return null;
 
-    const [activeTab, setActiveTab] = useState("Interface");
-    const [dynamicContent, setDynamicContent] = useState("");
+    const [activeTab, setActiveTab] = useState("Agent JSON");
+  const [dynamicContent, setDynamicContent] = useState("");
     const [isCopied, setIsCopied] = useState(false);
 
-    const updateDynamicContent = (tab: string) => {
-        if (tab === "Agent JSON") {
-            setDynamicContent(`{
-    "name": "react agent",
-    "description": "",
-    "agent_role": "",
-    "agent_instructions": "react app ",
-    "examples": null,
-    "features": [],
-    "tool": null,
-    "tool_usage_description": null,
-    "provider_id": "OpenAI",
-    "temperature": "0.7",
-    "top_p": "0.9",
-    "model": "gpt-4o-mini"
-}`);
-        } else if (tab === "Interface") {
-            setDynamicContent(`curl -X POST 'https://agentprod.studio.lyzr.ai/v3/inference/' 
-    -H 'Content-Type: application/json'
-    -H 'x-api-key: sk-defaultHscZqavArv1f8cxDBQb3XzMuhnVc3T'
-    -d '{
-    "user_id":"sstytcenko@gmail.com",
-    "agent_id":"6761bfda3b81ce3062def449",
-    "session_id":"6761bfda3b81ce3062def",
-    "message": " "
-    }'`);
+    useEffect(() => {
+        if (activeTab === "Agent JSON") {
+          // Construct the JSON content based on the formData
+          const agentData = {
+            name: formData.agentName,
+            codename: formData.codename,
+            roleDescription: formData.roleDescription,
+            agent_role: "", // You can customize this as per your requirements
+            agent_instructions: "", // Customize this as needed
+            examples: null,  // You can populate this field
+            features: [], // Customize as required
+            tool: null, // Customize if needed
+            tool_usage_description: null, // Add tool description if necessary
+            provider_id: "", // Customize provider_id
+            temperature: 0, // Example temperature setting
+            top_p: 0, // Example top_p setting
+            model: "", // Example model
+          };
+    
+          // Convert the object into a formatted JSON string
+          const jsonString = JSON.stringify(agentData, null, 2);
+          setDynamicContent(jsonString); // Update dynamic content
+        } else if (activeTab === "Interface") {
+          // Set content for the Interface tab
+          setDynamicContent(`create your agent first`);
         }
-    };
+      }, [formData, activeTab]);
+
+//     const updateDynamicContent = (tab: string) => {
+//         if (tab === "Agent JSON") {
+//             setDynamicContent(`{
+//     "name": "react agent",
+//     "description": "",
+//     "agent_role": "",
+//     "agent_instructions": "react app ",
+//     "examples": null,
+//     "features": [],
+//     "tool": null,
+//     "tool_usage_description": null,
+//     "provider_id": "OpenAI",
+//     "temperature": "0.7",
+//     "top_p": "0.9",
+//     "model": "gpt-4o-mini"
+// }`);
+//         } else if (tab === "Interface") {
+//             setDynamicContent(`curl -X POST 'https://agentprod.studio.lyzr.ai/v3/inference/' 
+//     -H 'Content-Type: application/json'
+//     -H 'x-api-key: sk-defaultHscZqavArv1f8cxDBQb3XzMuhnVc3T'
+//     -d '{
+//     "user_id":"sstytcenko@gmail.com",
+//     "agent_id":"6761bfda3b81ce3062def449",
+//     "session_id":"6761bfda3b81ce3062def",
+//     "message": " "
+//     }'`);
+//     setDynamicContent(`create your agent first`);
+//         }
+//     };
 
     const handleCopy = () => {
         if (dynamicContent) {
@@ -62,16 +96,10 @@ export const AgentApiModal: FC<ModalProps> = ({ isOpen, onClose }) => {
         }
     };
 
-    const handleTabChange = (tab: string) => {
-        setActiveTab(tab);
-        updateDynamicContent(tab);
-    };
-
-    useEffect(() => {
-        if (isOpen) {
-            updateDynamicContent(activeTab);
-        }
-    }, [isOpen, activeTab]);
+   
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab); // Simply update the active tab
+  };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

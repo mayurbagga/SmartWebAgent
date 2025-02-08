@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
@@ -21,6 +21,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
+    --inputbg: 0 0% 11.4%; /* Updated with #1D1D1D */
     --ring: 0 0% 3.9%;
     --radius: 0.75rem;
   }
@@ -60,4 +61,34 @@
       transparent 100%
     );
   }
+}
+
+/* Apply to all scrollbars */
+::-webkit-scrollbar {
+  width: 8px; /* Width of the vertical scrollbar */
+  height: 8px; /* Height of the horizontal scrollbar */
+}
+
+/* Track (the background of the scrollbar) */
+::-webkit-scrollbar-track {
+  background: #1a1a1a; /* Dark background to match the app */
+  border-radius: 8px; /* Rounded corners for the track */
+}
+
+/* Thumb (the draggable part of the scrollbar) */
+::-webkit-scrollbar-thumb {
+  background-color: #666; /* Medium gray for the scrollbar thumb */
+  border-radius: 8px; /* Rounded corners for the thumb */
+  border: 2px solid #1a1a1a; /* Matches track background for a thinner look */
+}
+
+/* Hover effect for the thumb */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #888; /* Lighter gray on hover for better visibility */
+}
+
+/* For Firefox */
+.scroll-container {
+  scrollbar-width: thin; /* Makes the scrollbar thinner */
+  scrollbar-color: #666 #1a1a1a; /* Thumb color and track color */
 }

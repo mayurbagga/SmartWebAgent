@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { FunctionContext } from "../../contexts/FunctionContext";
 
@@ -7,17 +7,13 @@ interface FunctionConfigProps {
     id: string;
     name: string;
     description: string;
-    functionName?: string; // Optional in case these are not always provided
-    functionParameters?: string;
   };
   onRemove: (id: string) => void;
 }
 
 const FunctionConfig: React.FC<FunctionConfigProps> = ({ func, onRemove }) => {
-  const [customName, setCustomName] = useState(func.functionName || "");
-  const [parameters, setParameters] = useState(func.functionParameters || "");
-  const [name, setName] = useState(func.name || "");
-
+  const [customName, setCustomName] = useState("");
+  const [parameters, setParameters] = useState("");
   const [errors, setErrors] = useState({
     customName: "",
     parameters: "",
@@ -33,19 +29,6 @@ const FunctionConfig: React.FC<FunctionConfigProps> = ({ func, onRemove }) => {
   }
 
   const { functionMappings, setFunctionMappings } = functionContext;
-
-  // Update customName and parameters when the func object changes
-  useEffect(() => {
-    if (func.functionName) {
-      setCustomName(func.functionName);
-    }
-    if (func.functionParameters) {
-      setParameters(func.functionParameters);
-    }
-    if (func.name) {
-      setName(func.name);
-    }
-  }, [func]);
 
   // Handle save functionality
   const handleSave = () => {
@@ -78,13 +61,12 @@ const FunctionConfig: React.FC<FunctionConfigProps> = ({ func, onRemove }) => {
   return (
     <div className="border rounded-lg bg-inputbg">
       <div className="border-b-2 border-[#232323] px-4 py-2 flex justify-between">
-      <h3 className="font-semibold text-lg">{name || func.name }</h3>
+        <h3 className="font-semibold">{func.name}</h3>
         <Trash2 className="cursor-pointer h-5 w-5" onClick={() => onRemove(func.id)} />
       </div>
 
-      <div className="py-2 px-4">
-        <p className="text-gray-400 ">Configuration</p>
-        <label className="block text-sm my-2">Function Name</label>
+      <div className="p-4">
+        <label className="block text-sm mb-2">Function Name</label>
         <input
           type="text"
           value={customName}
